@@ -11,11 +11,11 @@ APOLO usa **electron-updater + GitHub Releases**. La app instalada se actualiza 
 1. **Crear el repositorio en GitHub** llamado `APOLO` (público es lo más simple para el auto-update).
 2. En `package.json`, dentro de `build.publish`, poné tu usuario en `owner` (el `repo` ya es `APOLO`):
    ```json
-   "publish": [{ "provider": "github", "owner": "TU_USUARIO_GITHUB", "repo": "APOLO" }]
+   "publish": [{ "provider": "github", "owner": "thiagomer17-code", "repo": "APOLO" }]
    ```
 3. **Subir el código** al repo (una vez):
    ```powershell
-   git remote add origin https://github.com/TU_USUARIO_GITHUB/APOLO.git
+   git remote add origin https://github.com/thiagomer17-code/APOLO.git
    git push -u origin main
    ```
 4. **Token de GitHub** para poder publicar releases: creá un *Personal Access Token* (classic) con permiso `repo` en <https://github.com/settings/tokens>, y guardalo como variable de entorno antes de publicar:

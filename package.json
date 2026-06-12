@@ -46,7 +46,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "TU_USUARIO_GITHUB",
+        "owner": "thiagomer17-code",
         "repo": "APOLO"
       }
     ]
