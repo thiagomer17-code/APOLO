@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(mkdir -p 'C:/Users/PC Home/.claude/projects/D--Bibliotecas-Documents-APOLO/a0e87725-9ad8-456d-91fd-2880a9991740/tool-results/design_extracted')",
+      "Bash(tar -xf 'C:/Users/PC Home/.claude/projects/D--Bibliotecas-Documents-APOLO/a0e87725-9ad8-456d-91fd-2880a9991740/tool-results/design_decompressed' -C 'C:/Users/PC Home/.claude/projects/D--Bibliotecas-Documents-APOLO/a0e87725-9ad8-456d-91fd-2880a9991740/tool-results/design_extracted')",
+      "Bash(tar --force-local -xf 'C:/Users/PC Home/.claude/projects/D--Bibliotecas-Documents-APOLO/a0e87725-9ad8-456d-91fd-2880a9991740/tool-results/design_decompressed' -C 'C:/Users/PC Home/.claude/projects/D--Bibliotecas-Documents-APOLO/a0e87725-9ad8-456d-91fd-2880a9991740/tool-results/design_extracted')",
+      "Bash(npm -v)",
+      "Bash(npx -v)",
+      "Bash(npm ping *)",
+      "Bash(git --version)"
+    ]
+  }
+}

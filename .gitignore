@@ -1,0 +1,21 @@
+# Dependencias / build
+node_modules/
+dist/
+out/
+
+# Node portable (runtime local, no se versiona)
+.node/
+
+# Logs
+npm-debug.log*
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Config local de Claude Code
+.claude/settings.local.json
+
+# Material de diseño (referencia, no se empaqueta)
+_design/
