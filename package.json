@@ -1,7 +1,7 @@
 {
   "name": "apolo",
   "productName": "APOLO",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Editor personal de letras con acordes y tablaturas de guitarra, estilo Spotify. Funciona offline, sin cuentas, guardado local.",
   "author": "APOLO <thamerjob7@gmail.com>",
   "license": "UNLICENSED",

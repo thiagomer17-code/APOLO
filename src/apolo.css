@@ -121,9 +121,8 @@ input,textarea,select{ font-family:inherit; color:inherit; }
 .tb-toggle:active{ transform:scale(0.92); }
 .tb-toggle svg{ width:17px; height:17px; }
 .tb-logo{
-  width:16px; height:16px; border-radius:4px;
-  background:radial-gradient(circle at 32% 30%, var(--accent), color-mix(in oklch, var(--accent) 55%, #000) 90%);
-  box-shadow:0 0 0 1px oklch(1 0 0 / 0.08) inset;
+  width:22px; height:22px; flex:0 0 auto;
+  background:url("assets/logo.png") center/contain no-repeat;
 }
 .tb-title{ font-size:12px; font-weight:600; letter-spacing:0.14em; color:var(--text-2); }
 .tb-controls{ display:flex; height:100%; -webkit-app-region:no-drag; }
