@@ -63,7 +63,7 @@ function dragProps(type, id, onMove) {
   };
 }
 
-function Sidebar({ data, route, query, setQuery, recents, pinned, hiddenArtists, theme, open, onToggleTheme, onHome, onArtist, onSong, onNewArtist, onContextItem, onMoveArtist, onPlaceArtist }) {
+function Sidebar({ data, route, query, setQuery, recents, pinned, hiddenArtists, theme, open, onToggleTheme, onHome, onChordLib, onArtist, onSong, onNewArtist, onContextItem, onMoveArtist, onPlaceArtist }) {
   const q = query.trim().toLowerCase();
   const pinnedA = pinned && pinned.artists || [];
   const pinnedS = pinned && pinned.songs || [];
@@ -194,10 +194,13 @@ function Sidebar({ data, route, query, setQuery, recents, pinned, hiddenArtists,
       </div>
 
       <div className="side-foot">
-        <button className="side-nav" onClick={onHome}><Ico n="home" /> Biblioteca</button>
-        <button className="theme-toggle" onClick={onToggleTheme} title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
-          <Ico n={theme === 'dark' ? 'sun' : 'moon'} />
-        </button>
+        <button className={'side-nav' + (route.view === 'chordlib' ? ' active' : '')} onClick={onChordLib}><Ico n="chord" /> Acordes</button>
+        <div className="side-foot-row">
+          <button className={'side-nav' + (route.view === 'library' ? ' active' : '')} onClick={onHome}><Ico n="home" /> Biblioteca</button>
+          <button className="theme-toggle" onClick={onToggleTheme} title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
+            <Ico n={theme === 'dark' ? 'sun' : 'moon'} />
+          </button>
+        </div>
       </div>
     </aside>);
 

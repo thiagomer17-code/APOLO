@@ -27,7 +27,7 @@ function loadData(){
 /* =================================================================
    Pantalla del EDITOR de canción
    ================================================================= */
-function SongEditorScreen({data, song, onChange, onBack, onNavArtist, onNavAlbum}){
+function SongEditorScreen({data, song, chordLib, onChange, onBack, onNavArtist, onNavAlbum, onEditChord}){
   const VK = 'apolo-view-'+song.id;
   const init = (()=>{ try{ return JSON.parse(localStorage.getItem(VK))||{}; }catch(e){ return {}; } })();
   const [mode, setMode] = useState(init.mode||'edit');
@@ -45,8 +45,8 @@ function SongEditorScreen({data, song, onChange, onBack, onNavArtist, onNavAlbum
 
   useEffect(()=>{ localStorage.setItem(VK, JSON.stringify({mode,semis,preferFlat,lyricSize,chordPanel})); },[mode,semis,preferFlat,lyricSize,chordPanel]);
 
-  /* acordes mencionados en la canción (únicos, transpuestos) */
-  const chordList = useMemo(()=> collectChords(song.blocks, semis, preferFlat), [song.blocks, semis, preferFlat]);
+  /* acordes mencionados en la canción (únicos, transpuestos, con la biblioteca) */
+  const chordList = useMemo(()=> collectChords(song.blocks, semis, preferFlat, chordLib), [song.blocks, semis, preferFlat, chordLib]);
 
   /* autoscroll — acumula posición en flotante (scrollTop se redondea al leerlo) */
   useEffect(()=>{
@@ -141,7 +141,7 @@ function SongEditorScreen({data, song, onChange, onBack, onNavArtist, onNavAlbum
         </div>
         {chordPanel && (
           <ChordPanel chords={chordList} currentChord={null}
-            visibleSet={null} onClose={()=>setChordPanel(false)} panelRef={panelRef}/>
+            visibleSet={null} onClose={()=>setChordPanel(false)} onEditChord={onEditChord} panelRef={panelRef}/>
         )}
       </div>
 
@@ -218,6 +218,7 @@ function App(){
   const [pinned,setPinned] = useState(()=>{ try{ return JSON.parse(localStorage.getItem(LS_PINS))||{artists:[],songs:[]}; }catch(e){ return {artists:[],songs:[]}; } });
   const [hiddenArtists,setHiddenArtists] = useState(()=>{ try{ return JSON.parse(localStorage.getItem(LS_HIDDEN))||[]; }catch(e){ return []; } });
   const [albumOrder,setAlbumOrder] = useState(()=>{ try{ return JSON.parse(localStorage.getItem('apolo-aorder-v3'))||[]; }catch(e){ return []; } });
+  const [chordLib,setChordLib] = useState(()=>{ try{ const r=localStorage.getItem('apolo-chordlib-v1'); if(r) return JSON.parse(r); }catch(e){} return seedChordLib(); });
   const [theme,setTheme] = useState(()=> localStorage.getItem('apolo-theme')||'dark');
   const [sidebarOpen,setSidebarOpen] = useState(()=>{ const v=localStorage.getItem('apolo-sidebar'); return v===null ? true : v==='1'; });
   useEffect(()=>{ localStorage.setItem('apolo-sidebar', sidebarOpen?'1':'0'); },[sidebarOpen]);
@@ -240,6 +241,7 @@ function App(){
   useEffect(()=>{ localStorage.setItem(LS_PINS, JSON.stringify(pinned)); },[pinned]);
   useEffect(()=>{ localStorage.setItem(LS_HIDDEN, JSON.stringify(hiddenArtists)); },[hiddenArtists]);
   useEffect(()=>{ localStorage.setItem('apolo-aorder-v3', JSON.stringify(albumOrder)); },[albumOrder]);
+  useEffect(()=>{ localStorage.setItem('apolo-chordlib-v1', JSON.stringify(chordLib)); },[chordLib]);
 
   useEffect(()=>{
     window.__apoloAdjust = (src, cb, opts)=> setAdjust({src, cb, round:!!(opts&&opts.round)});
@@ -254,6 +256,11 @@ function App(){
   const goArtist = id=>go({view:'artist', artistId:id});
   const goAlbum  = (aid,alid)=>go({view:'album', artistId:aid, albumId:alid});
   const goSong   = sid=>{ const s=data.songs[sid]; if(s){ setRecents(r=>[sid, ...r.filter(x=>x!==sid)].slice(0,8)); go({view:'editor', songId:sid, artistId:s.artistId, albumId:s.albumId}); } };
+  const goChordLib = focus=> go(focus ? {view:'chordlib', focus} : {view:'chordlib'});
+
+  /* biblioteca de acordes */
+  function saveChord(name, variants){ setChordLib(l=>({...l, [name]:{name, variants}})); }
+  function deleteChord(name){ setChordLib(l=>{ const c={...l}; delete c[name]; return c; }); }
 
   /* mutaciones */
   function updateSong(s){ setData(d=>({...d, songs:{...d.songs,[s.id]:s}})); }
@@ -355,7 +362,7 @@ function App(){
 
       <div className="app-body">
         <Sidebar data={data} route={route} query={query} setQuery={setQuery} recents={recents} pinned={pinned} hiddenArtists={hiddenArtists} theme={theme} open={sidebarOpen} onToggleTheme={toggleTheme}
-          onHome={goHome} onArtist={goArtist} onSong={goSong} onNewArtist={()=>setModal({type:'artist'})} onContextItem={openCtxMenu} onMoveArtist={moveArtist} onPlaceArtist={placeArtistInSidebar}/>
+          onHome={goHome} onChordLib={()=>goChordLib()} onArtist={goArtist} onSong={goSong} onNewArtist={()=>setModal({type:'artist'})} onContextItem={openCtxMenu} onMoveArtist={moveArtist} onPlaceArtist={placeArtistInSidebar}/>
 
         <main className={'main'+(isEditor?' editor-bg':'')}>
           {!isEditor && (
@@ -367,9 +374,10 @@ function App(){
           )}
 
           {route.view==='library' && <LibraryView data={data} albumOrder={albumOrder} onArtist={goArtist} onAlbum={goAlbum} onNewArtist={()=>setModal({type:'artist'})} onPickArtist={setArtistPhoto} onPickAlbum={setAlbumCover} onContext={openCtxMenu} onMoveArtist={moveArtist} onMoveAlbumHome={moveAlbumHome}/>}
+          {route.view==='chordlib' && <ChordLibraryView key={route.focus||''} lib={chordLib} focusName={route.focus} onSaveChord={saveChord} onDeleteChord={deleteChord}/>}
           {route.view==='artist' && <ArtistView data={data} artistId={route.artistId} onAlbum={goAlbum} onSong={goSong} onNewAlbum={aid=>setModal({type:'album', ctx:{aid}})} onNewSong={(aid,alid)=>setModal({type:'song', ctx:{aid,alid}})} onPickArtist={setArtistPhoto} onPickAlbum={setAlbumCover} onContext={openCtxMenu} onMoveAlbum={moveAlbum}/>}
           {route.view==='album' && <AlbumView data={data} artistId={route.artistId} albumId={route.albumId} onSong={goSong} onPickAlbum={setAlbumCover} onMoveSong={moveSong} onNewSong={(aid,alid)=>setModal({type:'song', ctx:{aid,alid, albumTitle:(data.artists.find(a=>a.id===aid)?.albums.find(al=>al.id===alid)?.title)}})}/>}
-          {isEditor && <SongEditorScreen data={data} song={song} onChange={updateSong} onBack={back} onNavArtist={goArtist} onNavAlbum={goAlbum}/>}
+          {isEditor && <SongEditorScreen data={data} song={song} chordLib={chordLib} onChange={updateSong} onBack={back} onNavArtist={goArtist} onNavAlbum={goAlbum} onEditChord={name=>goChordLib(name)}/>}
         </main>
       </div>
 

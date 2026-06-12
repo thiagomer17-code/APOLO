@@ -219,7 +219,9 @@ input,textarea,select{ font-family:inherit; color:inherit; }
 .pin-badge{ margin-left:auto; flex:0 0 auto; color:var(--accent-text); display:grid; place-items:center; }
 .pin-badge svg{ width:13.5px; height:13.5px; }
 
-.side-foot{ border-top:1px solid var(--border-soft); padding-top:10px; display:flex; align-items:center; gap:8px; }
+.side-foot{ border-top:1px solid var(--border-soft); padding-top:10px; display:flex; flex-direction:column; gap:2px; }
+.side-foot-row{ display:flex; align-items:center; gap:8px; }
+.side-nav.active{ background:var(--bg-card); color:var(--text); }
 .side-nav{ display:flex; align-items:center; gap:10px; padding:7px 8px; border-radius:9px; color:var(--text-2); flex:1; font-size:13px; font-weight:600; transition:background .12s,color .12s; }
 .side-nav:hover{ background:var(--bg-card); color:var(--text); }
 .side-nav svg{ width:17px; height:17px; }
@@ -434,7 +436,7 @@ input,textarea,select{ font-family:inherit; color:inherit; }
 /* ============================ Modal ============================ */
 .overlay{ position:fixed; inset:0; z-index:200; background:oklch(0 0 0 / 0.55); backdrop-filter:blur(3px); display:grid; place-items:center; padding:24px; animation:fade .15s ease; }
 @keyframes fade{ from{ opacity:0; } }
-.modal{ width:min(460px,100%); background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-l); box-shadow:var(--shadow); padding:24px; animation:pop .18s cubic-bezier(.2,.9,.3,1.2); }
+.modal{ width:min(460px,100%); max-height:calc(100vh - 48px); overflow-y:auto; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-l); box-shadow:var(--shadow); padding:24px; animation:pop .18s cubic-bezier(.2,.9,.3,1.2); }
 @keyframes pop{ from{ opacity:0; transform:translateY(10px) scale(.98); } }
 .modal h3{ font-size:20px; font-weight:800; margin-bottom:4px; }
 .modal .sub{ color:var(--text-3); font-size:13px; margin-bottom:18px; }
@@ -815,3 +817,87 @@ textarea.input{ resize:vertical; min-height:84px; line-height:1.5; }
 [draggable="true"]:active{ cursor:grabbing; }
 .kbd{ font-family:var(--font-mono); font-size:11px; background:var(--bg-card-2); border:1px solid var(--border-soft); border-bottom-width:2px; border-radius:5px; padding:1px 6px; color:var(--text-2); }
 .fadein{ animation:fade .3s ease; }
+
+/* =================================================================
+   BIBLIOTECA DE ACORDES
+   ================================================================= */
+.clib-bar{ display:flex; align-items:center; gap:14px; margin:16px 0 20px; flex-wrap:wrap; }
+.clib-search{ width:min(320px,100%); }
+.clib-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(148px,1fr)); gap:12px; }
+.clib-card{
+  display:flex; flex-direction:column; align-items:center; gap:4px;
+  padding:14px 10px 12px; border-radius:13px;
+  background:var(--bg-card); border:1px solid var(--border-soft);
+  cursor:pointer; transition:background .15s, border-color .15s, transform .15s;
+}
+.clib-card:hover{ background:var(--bg-card-2); border-color:var(--border); transform:translateY(-1px); }
+.clib-name{ font-family:var(--font-mono); font-weight:700; font-size:15px; }
+.clib-count{ font-size:10.5px; color:var(--text-3); }
+
+/* botón de edición en la tarjeta del panel de acordes */
+.cpc-edit{ width:22px; height:22px; border-radius:6px; display:grid; place-items:center; color:var(--text-3); opacity:0; transition:opacity .12s, background .12s, color .12s; }
+.cpanel-card:hover .cpc-edit{ opacity:1; }
+.cpc-edit:hover{ background:var(--bg-hover); color:var(--text); }
+.cpc-edit svg{ width:12px; height:12px; }
+
+/* modal ancho (detalle / creador de acordes) */
+.modal.modal-lg{ width:min(720px,100%); }
+
+/* detalle: variantes de un acorde */
+.cdet-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:12px; margin-top:8px; }
+.cdet-card{
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  padding:12px 8px; border-radius:12px;
+  background:var(--bg-card-2); border:1px solid var(--border-soft);
+}
+.cdet-lbl{ font-size:10.5px; font-weight:700; color:var(--text-3); letter-spacing:0.05em; text-transform:uppercase; }
+.cdet-acts{ display:flex; gap:6px; }
+.cdet-add{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  min-height:172px; border-radius:12px; border:1px dashed var(--border);
+  color:var(--text-3); font-size:12.5px; font-weight:700;
+  transition:color .12s, border-color .12s, background .12s;
+}
+.cdet-add:hover{ color:var(--text); border-color:var(--text-3); background:var(--bg-card-2); }
+.cdet-add svg{ width:18px; height:18px; }
+
+/* ===== creador/editor de acorde (vertical) ===== */
+.ced-wrap{ display:flex; gap:26px; align-items:flex-start; flex-wrap:wrap; margin-top:10px; }
+.ced-tools{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.ced-lbl{ font-size:11px; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-3); }
+.ced-tool{
+  min-width:30px; height:30px; padding:0 8px; border-radius:7px;
+  background:var(--bg-card-2); border:1px solid var(--border-soft);
+  color:var(--text-2); font-weight:800; font-size:13px;
+  transition:background .12s, color .12s;
+}
+.ced-tool:hover{ background:var(--bg-hover); color:var(--text); }
+.ced-tool.on{ background:var(--accent); border-color:transparent; color:var(--accent-ink); }
+.ced-hint{ font-size:11.5px; color:var(--text-3); margin:8px 0 12px; max-width:296px; line-height:1.45; min-height:32px; }
+.ced-board{ display:inline-block; user-select:none; }
+.ced-mrow,.ced-row,.ced-srow{ display:flex; position:relative; }
+.ced-fnum{ width:26px; flex:0 0 auto; display:grid; place-items:center; font-family:var(--font-mono); font-size:11px; color:var(--text-3); }
+.ced-mark{ width:36px; height:26px; display:grid; place-items:center; color:var(--text-2); font-size:13px; border-radius:6px; }
+.ced-mark:hover{ background:var(--bg-hover); color:var(--text); }
+.ced-cell{ width:36px; height:34px; position:relative; border-radius:0; }
+.ced-cell::before{ content:''; position:absolute; top:0; bottom:0; left:50%; width:1px; background:color-mix(in srgb, var(--text-3) 55%, transparent); }
+.ced-cell::after{ content:''; position:absolute; left:0; right:0; top:0; height:1px; background:color-mix(in srgb, var(--text-3) 45%, transparent); }
+.ced-row.first .ced-cell::after{ height:3px; background:var(--text-2); }
+.ced-row.last .ced-cell{ border-bottom:1px solid color-mix(in srgb, var(--text-3) 45%, transparent); }
+.ced-cell:hover{ background:var(--accent-soft); }
+.ced-dot{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:24px; height:24px; border-radius:50%;
+  background:var(--text); color:var(--bg-window);
+  display:grid; place-items:center; font-size:12px; font-weight:800; z-index:2;
+}
+.ced-bar{ position:absolute; top:50%; transform:translateY(-50%); height:18px; border-radius:9px; background:var(--text); opacity:0.92; z-index:1; pointer-events:none; }
+.ced-sname{ width:36px; height:24px; display:grid; place-items:center; font-family:var(--font-mono); font-size:11px; font-weight:700; color:var(--text-2); }
+.ced-base{ display:flex; align-items:center; gap:10px; margin-top:12px; }
+.ced-base .stepper button{ width:30px; height:30px; }
+.ced-base .stepper .val{ min-width:40px; }
+.ced-preview{
+  display:flex; flex-direction:column; gap:12px; align-items:flex-start;
+  padding:14px 16px 16px; border-radius:12px;
+  background:var(--bg-card-2); border:1px solid var(--border-soft);
+}
