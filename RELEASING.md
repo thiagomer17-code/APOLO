@@ -36,7 +36,7 @@ APOLO usa **electron-updater + GitHub Releases**. La app instalada se actualiza 
    npm run release
    ```
    Esto compila el `.exe` **y** sube al GitHub Release: el instalador, su `.blockmap` y el `latest.yml` (el archivo que la app lee para detectar la versión nueva).
-4. (Opcional) Entrá al Release en GitHub y, si quedó como *draft*, publicalo.
+4. Listo: el release queda **publicado directamente** (config `releaseType: "release"`). Si alguna vez querés revisarlo antes de publicarlo, cambiá ese valor a `"draft"` en `package.json` y luego publicalo desde GitHub.
 
 ¡Listo! La próxima vez que abras APOLO en tu otra PC, detecta la versión nueva, la baja sola y te ofrece reiniciar para instalarla.
 

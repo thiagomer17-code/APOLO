@@ -47,7 +47,8 @@
       {
         "provider": "github",
         "owner": "thiagomer17-code",
-        "repo": "APOLO"
+        "repo": "APOLO",
+        "releaseType": "release"
       }
     ]
   },
