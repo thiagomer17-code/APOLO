@@ -93,6 +93,28 @@ function LyricBlock({block, editing, semis, preferFlat, onChange, onDelete}){
     setRawIdx(-1);
   }
 
+  /* Tab = espaciado estilo Word: inserta espacios REALES hasta la próxima
+     tabulación (cada 8 columnas), así cada espacio queda como lugar donde
+     anclar un acorde. Shift+Tab quita ese espaciado hacia atrás. */
+  const TAB_STOP = 8;
+  function onRawKey(e){
+    if(e.key!=='Tab') return;
+    e.preventDefault();
+    const el=e.target, s=el.selectionStart, t=el.selectionEnd;
+    if(e.shiftKey){
+      let n=0;
+      while(n<TAB_STOP && s-n-1>=0 && rawText[s-n-1]===' ') n++;
+      if(!n) return;
+      setRawText(rawText.slice(0,s-n)+rawText.slice(t));
+      requestAnimationFrame(()=>{ el.selectionStart=el.selectionEnd=s-n; });
+      return;
+    }
+    const lineStart=rawText.lastIndexOf('\n', s-1)+1;
+    const n=TAB_STOP-((s-lineStart)%TAB_STOP);
+    setRawText(rawText.slice(0,s)+' '.repeat(n)+rawText.slice(t));
+    requestAnimationFrame(()=>{ el.selectionStart=el.selectionEnd=s+n; });
+  }
+
   return (
     <div className="block">
       {(block.label || editing) && (
@@ -106,11 +128,11 @@ function LyricBlock({block, editing, semis, preferFlat, onChange, onDelete}){
 
       {rawIdx>=0 ? (
         <div>
-          <textarea className="lyric-edit" autoFocus value={rawText} onChange={e=>setRawText(e.target.value)} />
+          <textarea className="lyric-edit" autoFocus value={rawText} onChange={e=>setRawText(e.target.value)} onKeyDown={onRawKey} />
           <div className="block-tools" style={{opacity:1,marginTop:10}}>
             <button className="mini" onClick={saveRaw}>Guardar letra</button>
             <button className="mini" onClick={()=>setRawIdx(-1)}>Cancelar</button>
-            <span className="muted" style={{fontSize:11,alignSelf:'center'}}>Los acordes se reacomodan por línea.</span>
+            <span className="muted" style={{fontSize:11,alignSelf:'center'}}>Tab agrega espacios (cada uno admite un acorde) · Los acordes se reacomodan por línea.</span>
           </div>
         </div>
       ) : (
