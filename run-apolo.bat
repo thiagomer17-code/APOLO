@@ -8,4 +8,6 @@ setlocal
 set "APP_DIR=%~dp0"
 set "PATH=%APP_DIR%.node\node-v22.22.3-win-x64;%PATH%"
 cd /d "%APP_DIR%"
+rem precompila el JSX a app.bundle.js (rapido, sin Babel en runtime)
+call node "%APP_DIR%build\compile.js"
 call "%APP_DIR%node_modules\.bin\electron.cmd" .

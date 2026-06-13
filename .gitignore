@@ -6,6 +6,9 @@ out/
 # Node portable (runtime local, no se versiona)
 .node/
 
+# Bundle generado por build/compile.js (se regenera en cada build)
+src/app.bundle.js
+
 # Logs
 npm-debug.log*
 *.log
