@@ -115,6 +115,83 @@ function createWindow() {
   });
 }
 
+// =================================================================
+// Persistencia en ARCHIVO (biblioteca y acordes del usuario).
+// localStorage demostró perder escrituras grandes ante cierres no
+// limpios; los datos importantes van a JSON reales con escritura
+// atómica (tmp + rename), debounce y backup de la sesión anterior.
+// =================================================================
+const STORE_FILES = { data: 'apolo-data.json', chordlib: 'apolo-chordlib.json' };
+const storePending = {};
+const storeTimers = {};
+
+function storePath(key) {
+  const f = STORE_FILES[key];
+  return f ? path.join(app.getPath('userData'), f) : null;
+}
+function storeWriteNow(key, json) {
+  const file = storePath(key);
+  if (!file || typeof json !== 'string') return;
+  try {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    const tmp = file + '.tmp';
+    fs.writeFileSync(tmp, json, 'utf8');
+    fs.renameSync(tmp, file);
+  } catch (err) {
+    console.error('[store] fallo escribiendo', key, err);
+  }
+}
+ipcMain.on('apolo:store-load', (e, key) => {
+  let out = null;
+  try {
+    const file = storePath(key);
+    if (file && fs.existsSync(file)) out = fs.readFileSync(file, 'utf8');
+  } catch (err) {}
+  e.returnValue = out;
+});
+ipcMain.on('apolo:store-save', (e, key, json) => {
+  if (!storePath(key) || typeof json !== 'string') return;
+  storePending[key] = json;
+  clearTimeout(storeTimers[key]);
+  storeTimers[key] = setTimeout(() => {
+    const j = storePending[key];
+    delete storePending[key];
+    storeWriteNow(key, j);
+  }, 500);
+});
+ipcMain.on('apolo:store-flush', (e, key, json) => {
+  clearTimeout(storeTimers[key]);
+  delete storePending[key];
+  storeWriteNow(key, json);
+  e.returnValue = true;
+});
+app.on('before-quit', () => {
+  for (const k of Object.keys(storePending)) {
+    clearTimeout(storeTimers[k]);
+    storeWriteNow(k, storePending[k]);
+    delete storePending[k];
+  }
+});
+/* backup rotativo: al arrancar, el estado de la sesión anterior queda en .bak.
+   CRÍTICO: solo rotamos si el .json es JSON válido. Si está corrupto/truncado,
+   NO lo copiamos encima del .bak (que podría ser la última copia buena). Así,
+   ante una corrupción + el siguiente arranque que reescribe seed encima del
+   .json, el .bak sigue conservando la biblioteca real para recuperación. */
+function rotateStoreBackups() {
+  for (const k of Object.keys(STORE_FILES)) {
+    const f = storePath(k);
+    try {
+      if (!fs.existsSync(f)) continue;
+      const raw = fs.readFileSync(f, 'utf8');
+      JSON.parse(raw); // valida: si lanza, el origen está corrupto -> no rotar
+      fs.writeFileSync(f + '.bak.tmp', raw, 'utf8');
+      fs.renameSync(f + '.bak.tmp', f + '.bak');
+    } catch (err) {
+      console.error('[store] backup omitido (origen inválido):', k);
+    }
+  }
+}
+
 // Controles de ventana desde la barra de título personalizada.
 ipcMain.on('apolo:win', (e, action) => {
   const w = BrowserWindow.fromWebContents(e.sender);
@@ -137,6 +214,7 @@ if (!gotLock) {
   });
 
   app.whenReady().then(() => {
+    rotateStoreBackups();
     registerAppProtocol();
     createWindow();
     setupAutoUpdates(() => mainWindow);

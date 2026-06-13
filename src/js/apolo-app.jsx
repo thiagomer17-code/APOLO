@@ -19,9 +19,36 @@ function normalize(data){
   });
   return data;
 }
+/* ---------- persistencia ----------
+   En Electron la biblioteca y los acordes viven en ARCHIVOS JSON reales
+   (via window.apolo.store). localStorage queda como legado: se migra de
+   ahí la primera vez y sirve de fallback si la app corre en un browser. */
+const hasStore = ()=> !!(window.apolo && window.apolo.store);
+/* Modo seguro: si el archivo del store EXISTE pero su JSON está corrupto/truncado,
+   NO debemos pisarlo con el seed (sería pérdida permanente de datos del usuario).
+   Marcamos la clave afectada y bloqueamos su persistencia hasta reiniciar limpio. */
+const storeLoadFailed = {};   // {data:true} / {chordlib:true} si la carga falló por parse
 function loadData(){
+  if(hasStore()){
+    let r=null; try{ r=window.apolo.store.load('data'); }catch(e){}
+    if(r){ try{ return normalize(JSON.parse(r)); }catch(e){ storeLoadFailed.data=true; console.error('[apolo] apolo-data.json corrupto: persistencia bloqueada para no perder datos', e); return normalize(apoloSeed()); } }
+  }
   try{ const r=localStorage.getItem(LS_DATA); if(r) return normalize(JSON.parse(r)); }catch(e){}
   return normalize(apoloSeed());
+}
+function loadChordLib(){
+  if(hasStore()){
+    let r=null; try{ r=window.apolo.store.load('chordlib'); }catch(e){}
+    if(r){ try{ return JSON.parse(r); }catch(e){ storeLoadFailed.chordlib=true; console.error('[apolo] apolo-chordlib.json corrupto: persistencia bloqueada para no perder datos', e); return seedChordLib(); } }
+  }
+  try{ const r=localStorage.getItem('apolo-chordlib-v1'); if(r) return JSON.parse(r); }catch(e){}
+  return seedChordLib();
+}
+function persist(key, lsKey, obj){
+  if(storeLoadFailed[key]) return;   // archivo corrupto: no sobrescribir con seed
+  const json=JSON.stringify(obj);
+  if(hasStore()) window.apolo.store.save(key, json);
+  else localStorage.setItem(lsKey, json);
 }
 
 /* =================================================================
@@ -38,12 +65,13 @@ function SongEditorScreen({data, song, chordLib, onChange, onBack, onNavArtist, 
   const [autoscroll, setAutoscroll] = useState(false);
   const [speed, setSpeed] = useState(0.5);
   const [chordPanel, setChordPanel] = useState(init.chordPanel||false);
+  const [cols, setCols] = useState(init.cols||1);          // columnas en modo lectura (1-4)
   const [currentChord, setCurrentChord] = useState(null);
   const [visibleChords, setVisibleChords] = useState(()=>new Set());
   const scrollRef = useRef(null);
   const panelRef = useRef(null);
 
-  useEffect(()=>{ localStorage.setItem(VK, JSON.stringify({mode,semis,preferFlat,lyricSize,chordPanel})); },[mode,semis,preferFlat,lyricSize,chordPanel]);
+  useEffect(()=>{ localStorage.setItem(VK, JSON.stringify({mode,semis,preferFlat,lyricSize,chordPanel,cols})); },[mode,semis,preferFlat,lyricSize,chordPanel,cols]);
 
   /* acordes mencionados en la canción (únicos, transpuestos, con la biblioteca) */
   const chordList = useMemo(()=> collectChords(song.blocks, semis, preferFlat, chordLib), [song.blocks, semis, preferFlat, chordLib]);
@@ -108,7 +136,7 @@ function SongEditorScreen({data, song, chordLib, onChange, onBack, onNavArtist, 
 
       <div className="ed-main">
         <div className="ed-scroll" ref={scrollRef}>
-        <div className={'ed-canvas'+(editing?' editing':' read')} style={{'--lyric-size':lyricSize+'px'}}>
+        <div className={'ed-canvas'+(editing?' editing':' read')+(!editing&&cols>1?' multi cols-'+cols:'')} style={{'--lyric-size':lyricSize+'px'}}>
           <div className="song-meta">
             <h1>{song.title}</h1>
             <div className="by">{artist?.name}{album?` — ${album.title}`:''}</div>
@@ -120,23 +148,25 @@ function SongEditorScreen({data, song, chordLib, onChange, onBack, onNavArtist, 
             </div>
           </div>
 
-          {editing && <Inserter onLyric={()=>insertBlock(0,'lyric')} onTab={()=>insertBlock(0,'tab')}/>}
-          {song.blocks.map((b,i)=>(
-            <React.Fragment key={b._k}>
-              {b.type==='tab'
-                ? <TabBlock block={b} editing={editing} onChange={nb=>updateBlock(i,nb)} onDelete={editing?()=>deleteBlock(i):null}/>
-                : <LyricBlock block={b} editing={editing} semis={semis} preferFlat={preferFlat} onChange={nb=>updateBlock(i,nb)} onDelete={editing && song.blocks.length>1?()=>deleteBlock(i):null}/>
-              }
-              {editing && <Inserter onLyric={()=>insertBlock(i+1,'lyric')} onTab={()=>insertBlock(i+1,'tab')}/>}
-            </React.Fragment>
-          ))}
+          <div className="song-flow">
+            {editing && <Inserter onLyric={()=>insertBlock(0,'lyric')} onTab={()=>insertBlock(0,'tab')}/>}
+            {song.blocks.map((b,i)=>(
+              <React.Fragment key={b._k}>
+                {b.type==='tab'
+                  ? <TabBlock block={b} editing={editing} onChange={nb=>updateBlock(i,nb)} onDelete={editing?()=>deleteBlock(i):null}/>
+                  : <LyricBlock block={b} editing={editing} semis={semis} preferFlat={preferFlat} onChange={nb=>updateBlock(i,nb)} onDelete={editing && song.blocks.length>1?()=>deleteBlock(i):null}/>
+                }
+                {editing && <Inserter onLyric={()=>insertBlock(i+1,'lyric')} onTab={()=>insertBlock(i+1,'tab')}/>}
+              </React.Fragment>
+            ))}
 
-          {song.notes && !editing && (
-            <div style={{marginTop:34,paddingTop:18,borderTop:'1px solid var(--border-soft)',color:'var(--text-2)',fontSize:14,lineHeight:1.6}}>
-              <div className="block-label" style={{margin:'0 0 8px'}}>Notas</div>
-              {song.notes}
-            </div>
-          )}
+            {song.notes && !editing && (
+              <div style={{marginTop:34,paddingTop:18,borderTop:'1px solid var(--border-soft)',color:'var(--text-2)',fontSize:14,lineHeight:1.6,breakInside:'avoid'}}>
+                <div className="block-label" style={{display:'flex',margin:'0 0 8px'}}>Notas</div>
+                {song.notes}
+              </div>
+            )}
+          </div>
         </div>
         </div>
         {chordPanel && (
@@ -150,6 +180,9 @@ function SongEditorScreen({data, song, chordLib, onChange, onBack, onNavArtist, 
           <button onClick={()=>setLyricSize(s=>Math.max(13,s-1))} title="Letra más chica"><span style={{fontSize:13,fontWeight:800}}>A−</span></button>
           <span className="scr-val">{lyricSize}</span>
           <button onClick={()=>setLyricSize(s=>Math.min(30,s+1))} title="Letra más grande"><span style={{fontSize:17,fontWeight:800}}>A+</span></button>
+          <span className="sep"></span>
+          <button className={cols>1?'on':''} onClick={()=>setCols(c=> c>=4 ? 1 : c+1)} title="Columnas de lectura (1 a 4)"><Ico n="cols"/></button>
+          <span className="scr-val">{cols} col</span>
           <span className="sep"></span>
           <button className={autoscroll?'on':''} onClick={()=>setAutoscroll(a=>!a)} title="Autoscroll">
             {autoscroll ? <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg> : <Ico n="scroll"/>}
@@ -218,7 +251,7 @@ function App(){
   const [pinned,setPinned] = useState(()=>{ try{ return JSON.parse(localStorage.getItem(LS_PINS))||{artists:[],songs:[]}; }catch(e){ return {artists:[],songs:[]}; } });
   const [hiddenArtists,setHiddenArtists] = useState(()=>{ try{ return JSON.parse(localStorage.getItem(LS_HIDDEN))||[]; }catch(e){ return []; } });
   const [albumOrder,setAlbumOrder] = useState(()=>{ try{ return JSON.parse(localStorage.getItem('apolo-aorder-v3'))||[]; }catch(e){ return []; } });
-  const [chordLib,setChordLib] = useState(()=>{ try{ const r=localStorage.getItem('apolo-chordlib-v1'); if(r) return JSON.parse(r); }catch(e){} return seedChordLib(); });
+  const [chordLib,setChordLib] = useState(loadChordLib);
   const [theme,setTheme] = useState(()=> localStorage.getItem('apolo-theme')||'dark');
   const [sidebarOpen,setSidebarOpen] = useState(()=>{ const v=localStorage.getItem('apolo-sidebar'); return v===null ? true : v==='1'; });
   useEffect(()=>{ localStorage.setItem('apolo-sidebar', sidebarOpen?'1':'0'); },[sidebarOpen]);
@@ -235,13 +268,31 @@ function App(){
     r.setProperty('--font-lyric', t.lyricFont);
   },[t.accent, t.lyricFont]);
 
-  useEffect(()=>{ localStorage.setItem(LS_DATA, JSON.stringify(data)); },[data]);
+  /* biblioteca y acordes → archivo (debounce: evita reescribir 200KB por tecla)
+     CRÍTICO: el primer render NO debe persistir lo que devolvió loadData(). Si la
+     lectura del archivo falló transitoriamente (antivirus/lock/I-O), loadData() cae
+     a localStorage y luego al SEED; persistir en el montaje pisaría apolo-data.json
+     con ese seed. Solo escribimos tras una MUTACIÓN real (cambio posterior al montaje). */
+  const dataDirty = useRef(false);
+  const chordDirty = useRef(false);
+  useEffect(()=>{ if(!dataDirty.current){ dataDirty.current=true; return; } const t=setTimeout(()=>persist('data', LS_DATA, data), 400); return ()=>clearTimeout(t); },[data]);
+  useEffect(()=>{ if(!chordDirty.current){ chordDirty.current=true; return; } const t=setTimeout(()=>persist('chordlib', 'apolo-chordlib-v1', chordLib), 400); return ()=>clearTimeout(t); },[chordLib]);
+  /* al cerrar la ventana: volcado sincrónico garantizado del estado más reciente */
+  const dataRef = useRef(data); dataRef.current = data;
+  const chordLibRef = useRef(chordLib); chordLibRef.current = chordLib;
+  useEffect(()=>{
+    const h=()=>{ if(hasStore()){ try{
+      if(dataDirty.current && !storeLoadFailed.data) window.apolo.store.flush('data', JSON.stringify(dataRef.current));
+      if(chordDirty.current && !storeLoadFailed.chordlib) window.apolo.store.flush('chordlib', JSON.stringify(chordLibRef.current));
+    }catch(e){} } };
+    window.addEventListener('beforeunload', h);
+    return ()=>window.removeEventListener('beforeunload', h);
+  },[]);
   useEffect(()=>{ localStorage.setItem(LS_ROUTE, JSON.stringify(hist)); },[hist]);
   useEffect(()=>{ localStorage.setItem(LS_RECENTS, JSON.stringify(recents)); },[recents]);
   useEffect(()=>{ localStorage.setItem(LS_PINS, JSON.stringify(pinned)); },[pinned]);
   useEffect(()=>{ localStorage.setItem(LS_HIDDEN, JSON.stringify(hiddenArtists)); },[hiddenArtists]);
   useEffect(()=>{ localStorage.setItem('apolo-aorder-v3', JSON.stringify(albumOrder)); },[albumOrder]);
-  useEffect(()=>{ localStorage.setItem('apolo-chordlib-v1', JSON.stringify(chordLib)); },[chordLib]);
 
   useEffect(()=>{
     window.__apoloAdjust = (src, cb, opts)=> setAdjust({src, cb, round:!!(opts&&opts.round)});
@@ -377,7 +428,7 @@ function App(){
           {route.view==='chordlib' && <ChordLibraryView key={route.focus||''} lib={chordLib} focusName={route.focus} onSaveChord={saveChord} onDeleteChord={deleteChord}/>}
           {route.view==='artist' && <ArtistView data={data} artistId={route.artistId} onAlbum={goAlbum} onSong={goSong} onNewAlbum={aid=>setModal({type:'album', ctx:{aid}})} onNewSong={(aid,alid)=>setModal({type:'song', ctx:{aid,alid}})} onPickArtist={setArtistPhoto} onPickAlbum={setAlbumCover} onContext={openCtxMenu} onMoveAlbum={moveAlbum}/>}
           {route.view==='album' && <AlbumView data={data} artistId={route.artistId} albumId={route.albumId} onSong={goSong} onPickAlbum={setAlbumCover} onMoveSong={moveSong} onNewSong={(aid,alid)=>setModal({type:'song', ctx:{aid,alid, albumTitle:(data.artists.find(a=>a.id===aid)?.albums.find(al=>al.id===alid)?.title)}})}/>}
-          {isEditor && <SongEditorScreen data={data} song={song} chordLib={chordLib} onChange={updateSong} onBack={back} onNavArtist={goArtist} onNavAlbum={goAlbum} onEditChord={name=>goChordLib(name)}/>}
+          {isEditor && <SongEditorScreen key={song.id} data={data} song={song} chordLib={chordLib} onChange={updateSong} onBack={back} onNavArtist={goArtist} onNavAlbum={goAlbum} onEditChord={name=>goChordLib(name)}/>}
         </main>
       </div>
 

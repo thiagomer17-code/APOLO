@@ -548,6 +548,18 @@ textarea.input{ resize:vertical; min-height:84px; line-height:1.5; }
 .ed-canvas{ max-width:760px; margin:0 auto; padding:38px 28px 160px; }
 .ed-canvas.read{ max-width:720px; }
 
+/* ----- lectura multi-columna (estilo "varias páginas" de Word) ----- */
+.ed-canvas.read.multi{ max-width:none; padding-left:36px; padding-right:36px; }
+.ed-canvas.read .song-flow{ column-gap:48px; }
+.ed-canvas.read.cols-2 .song-flow{ column-count:2; }
+.ed-canvas.read.cols-3 .song-flow{ column-count:3; }
+.ed-canvas.read.cols-4 .song-flow{ column-count:4; }
+.ed-canvas.read.multi .song-flow{ column-rule:1px solid var(--border-soft); }
+.ed-canvas.read.multi .block{ break-inside:avoid; }        /* cada sección (letra+acordes) es ATÓMICA: nunca se reparte entre columnas */
+.ed-canvas.read.multi .tabread{ break-inside:avoid; }      /* cada tablatura también va entera a una columna */
+.ed-canvas.read.multi .lyric-line{ padding-right:2.5em; line-height:2.05; }   /* respiro a la derecha para que un acorde al final de la fila no pise la column-rule; line-height alto: en columnas angostas los renglones envuelven y los acordes de filas 2+ necesitan ~0.74em libres arriba */
+.ed-canvas.read.multi .block-label{ display:flex; }        /* block-level: muestra la rayita divisoria de la sección */
+
 /* meta header dentro del lienzo (modo lectura) */
 .song-meta{ margin-bottom:30px; }
 .song-meta h1{ font-size:34px; font-weight:800; letter-spacing:-0.02em; line-height:1.05; }

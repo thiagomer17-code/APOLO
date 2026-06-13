@@ -35,7 +35,8 @@ const I = {
   rotl: <path d="M4 9h7a5 5 0 1 1-5 5M4 9l2.5-3M4 9l3 2" strokeWidth="1.7" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
   rotr: <path d="M20 9h-7a5 5 0 1 0 5 5M20 9l-2.5-3M20 9l-3 2" strokeWidth="1.7" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
   center: <path d="M12 3v3m0 12v3M3 12h3m12 0h3M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" strokeWidth="1.6" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
-  side: <path d="M4.5 5.5h15a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1ZM9.5 5.5v13" strokeWidth="1.6" stroke="currentColor" fill="none" strokeLinejoin="round" />
+  side: <path d="M4.5 5.5h15a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-11a1 1 0 0 1 1-1ZM9.5 5.5v13" strokeWidth="1.6" stroke="currentColor" fill="none" strokeLinejoin="round" />,
+  cols: <path d="M4 5h4.5v14H4zM9.75 5h4.5v14h-4.5zM15.5 5H20v14h-4.5z" strokeWidth="1.5" stroke="currentColor" fill="none" strokeLinejoin="round" />
 };
 function Ico({ n, className }) {
   return <svg viewBox="0 0 24 24" className={className} fill={['search', 'play', 'edit', 'gear', 'guitar', 'cam'].includes(n) ? 'currentColor' : 'none'} aria-hidden="true">{I[n]}</svg>;
